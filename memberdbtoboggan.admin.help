@@ -1,0 +1,34 @@
+<?php
+/**
+ * Helpfile for memberdbtoboggan.
+ */
+
+/**
+ * Creates the help text for the MemberDB Toboggan settings page
+ *
+ * @return
+ *   HTML with the help text
+ */
+function memberdbtoboggan_settings_help() {
+  return t('
+<p>To make use of the <em>memberdbtoboggan</em> module, Drupal needs to be able to access the MemberDB backend database.</p>
+<p>You can configure this database by editing your settings.php file.</p>
+<p>Modify the $db_url variable, so that instead of a string it is an array. The array should have at least a \'default\' key that contains the existing url for the Drupal database.
+First, change:
+<pre>
+  $db_url = \'mysqli://username:password@localhost/database\';
+</pre>
+<p>To:</p>
+<pre>
+  $db_url = array();
+  $db_url[\'default\'] = \'mysqli://username:password@localhost/database\';
+</pre>
+<p>You can now append the database url for the MemberDB database below the default url. You should give it the key \'memberdb\'.
+<pre>
+  $db_url = array();
+  $db_url[\'default\'] = \'mysqli://username:password@localhost/database\';
+  $db_url[\'radius\'] = \'mysqli://memberdb:secret@localhost/memberdb\';
+</pre>
+<p>The <em>memberdb</em> account needs to be able to read from and write to the table with account credentials and attributes.</p>
+  ');
+}
