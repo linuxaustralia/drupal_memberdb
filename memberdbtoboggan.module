@@ -67,14 +67,14 @@ function memberdbtoboggan_user_login_validate($form, &$form_state) {
     // If logintoboggan enabled and email in use on Drupal with a
     // non-automagic account, do not login via MemberDB.
     if (module_exists('logintoboggan')) {
-      if (db_result(db_query("SELECT uid FROM {user} WHERE mail '%s' LIKE AND user NOT LIKE 'la%'", $form_state['values']['name']))) {
+      if (db_result(db_query("SELECT uid FROM {users} WHERE mail LIKE '%s' AND name NOT LIKE '%s%%'", $form_state['values']['name'], variable_get('memberdbtoboggan_prefix', 'la')))) {
         return;
       }
     }
 
     // Select all the info we need from MemberDB.
     db_set_active('memberdb');
-    $row = db_fetch_object(db_query("SELECT p.member_id, p.salt, p.password, m.email FROM passwd AS p LEFT JOIN members AS m ON(p.member_id = m.id) WHERE m.email = '%s' LIMIT 1", $form_state['values']['name']));
+    $row = db_fetch_object(db_query("SELECT p.member_id, p.salt, p.password, m.email, m.first_name, m.last_name FROM passwd AS p LEFT JOIN members AS m ON(p.member_id = m.id) WHERE m.email = '%s' LIMIT 1", $form_state['values']['name']));
     db_set_active();
 
     // This means the user exists in MemberDB with the given email address.
@@ -104,6 +104,16 @@ function memberdbtoboggan_user_login_validate($form, &$form_state) {
             'status' => TRUE,
           );
 
+          // Set the user profile, if one exists.
+          if (module_exists('profile')) {
+            if ($field = variable_get('memberdbtoboggan_profile_firstname', 0)) {
+              $user_attributes[$field] = $row->first_name;
+            }
+            if ($field = variable_get('memberdbtoboggan_profile_surname', 0)) {
+              $user_attributes[$field] = $row->last_name;
+            }
+          }
+
           $new_user = user_save(
             new stdClass(),
             $user_attributes
@@ -113,7 +123,7 @@ function memberdbtoboggan_user_login_validate($form, &$form_state) {
           $rid = variable_get('memberdbtoboggan_rid', 0);
           if (!empty($rid)) {
             $role = db_result(db_query("SELECT name FROM {role} WHERE rid = %d", $rid));
-            $roles = $new_user->roles + array($rid => $role);
+            $roles = array_merge($new_user->roles, array($rid => $role));
             user_save($new_user, array('roles' => $roles));
           }
         }
@@ -146,11 +156,51 @@ function memberdbtoboggan_profile_form_submit($form, &$form_state) {
   }
 }
 
+/**
+ * Implementation of hook_webform_select_options_info()
+ */
+
+function memberdbtoboggan_webform_select_options_info() {
+  $items = array();
+
+  $items['votes'] = array(
+    'title' => t('MemberDB: Vote options'),
+    'options callback' => 'memberdbtoboggan_webform_options_votes',
+  );
+  return $items;
+}
+
 // ----------------------------------------------------------
 
 /**
  * Helper to generate a username.
  */
 function memberdbtoboggan_make_username($id) {
-  return sprintf("la%05d", $id);
+  return sprintf("%s%05d", variable_get('memberdbtoboggan_prefix', 'la'), $id);
+}
+
+/**
+ * Provide webform module with a list of vote options.
+ */
+function memberdbtoboggan_webform_options_votes() {
+  return array(
+    'Y' => t('Yes'),
+    'N' => t('No'),
+    'A' => t('Abstain'),
+  );
+}
+
+/**
+ * Return a list of profile field names.
+ */
+function memberdbtoboggan_profile_fields() {
+  $fields = array();
+  $categories = profile_categories();
+  foreach ($categories as $category) {
+    $result = _profile_get_fields($category['name']);
+    while ($field = db_fetch_object($result)) {
+      $fields[$field->name] = t('!title (!category)', array('!title' => $field->title, '!category' => $field->category));
+    }
+  }
+  return $fields;
 }

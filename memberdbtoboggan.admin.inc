@@ -30,6 +30,13 @@ function memberdbtoboggan_settings() {
     return system_settings_form($form);
   }
 
+  $form['memberdbtoboggan_prefix'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Username Prefix',
+    '#description' => t('Prepend this string to the MemberDB ID to generate a Drupal username.'),
+    '#default_value' => variable_get('memberdbtoboggan_prefix', 'la'),
+  );
+
   $roles = array(0 => '<none>');
   $roles += user_roles(TRUE);
   $form['memberdbtoboggan_rid'] = array(
@@ -39,6 +46,27 @@ function memberdbtoboggan_settings() {
     '#options' => $roles,
     '#default_value' => variable_get('memberdbtoboggan_rid', 0),
   );
+
+  if (module_exists('profile')) {
+    $fields = array(0 => '<none>');
+    $fields += memberdbtoboggan_profile_fields();
+
+    $form['memberdbtoboggan_profile_firstname'] = array(
+      '#type' => 'select',
+      '#title' => 'Profile first name',
+      '#description' => t('Transpose the MemberDB firstname to this profile field.'),
+      '#options' => $fields,
+      '#default_value' => variable_get('memberdbtoboggan_profile_firstname', 0),
+    );
+
+    $form['memberdbtoboggan_profile_surname'] = array(
+      '#type' => 'select',
+      '#title' => 'Profile last name',
+      '#description' => t('Transpose the MemberDB lastname to this profile field.'),
+      '#options' => $fields,
+      '#default_value' => variable_get('memberdbtoboggan_profile_surname', 0),
+    );
+  }
 
   return system_settings_form($form);
 }
