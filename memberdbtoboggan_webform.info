@@ -1,0 +1,7 @@
+name = MemberDB Toboggan Webform
+description = Webform integration for MemberDB Toboggan.
+core = 6.x
+package = " Linux Australia"
+;
+dependencies[] = memberdbtoboggan
+dependencies[] = webform_validation
