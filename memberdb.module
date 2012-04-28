@@ -1,0 +1,39 @@
+<?php
+/**
+ * @file
+ */
+
+/**
+ * Implementation of hook_menu()
+ */
+function memberdb_menu() {
+  $items = array();
+  $items['admin/settings/memberdb'] = array(
+    'title' => 'MemberDB',
+    'description' => 'Configure settings for the MemberDB module suite.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('memberdb_admin_settings'),
+    'access callback' => 'user_access',
+    'access arguments' => array('administer memberdb'),
+    'file' => 'memberdb.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_perm()
+ */
+function memberdb_perm() {
+  return array(
+    'administer memberdb',
+  );
+}
+
+
+/**
+ * Implements hook_user().
+ */
+function memberdb_user($op, &$edit, &$account, $category = NULL) {
+
+}

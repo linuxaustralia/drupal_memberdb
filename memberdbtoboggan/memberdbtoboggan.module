@@ -10,20 +10,11 @@ function memberdbtoboggan_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('memberdbtoboggan_settings'),
     'access callback' => 'user_access',
-    'access arguments' => array('administer memberdbtoboggan'),
+    'access arguments' => array('administer memberdb'),
     'file' => 'memberdbtoboggan.admin.inc',
     'type' => MENU_NORMAL_ITEM,
   );
   return $items;
-}
-
-/**
- * Implementation of hook_perm()
- */
-function memberdbtoboggan_perm() {
-  return array(
-    'administer memberdbtoboggan',
-  );
 }
 
 /**

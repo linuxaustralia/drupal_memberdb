@@ -1,15 +1,42 @@
 <?php
 /**
- * Helpfile for memberdbtoboggan.
+ * MemberDB settings form.
  */
+function memberdb_admin_settings() {
+
+  // This whole thing will fail if there is no 'memberdb' $db_url in settings.php.
+  // So check for that first.
+  global $db_url;
+  if (!is_array($db_url) || empty($db_url['memberdb'])) {
+    drupal_set_message(t('This module requires additional configuration. No $db_url named memberdb was found in your settings.php file. Please add one.'), 'error');
+  }
+  else {
+    drupal_set_message(t('Your settings.php file contains a $db_url named memberdb.'));
+  }
+
+  // If the memberdb db_url wasn't found, expand this help section.
+  $form = array();
+  $form['help'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Help',
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+  $form['help']['memberdb_help'] = array(
+    '#type'  => 'markup',
+    '#value' => memberdb_admin_settings_help(),
+  );
+
+  return system_settings_form($form);
+}
 
 /**
- * Creates the help text for the MemberDB Toboggan settings page
+ * Creates the help text for the MemberDB settings page
  *
  * @return
  *   HTML with the help text
  */
-function memberdbtoboggan_settings_help() {
+function memberdb_admin_settings_help() {
   return t('
 <p>To make use of the <em>memberdbtoboggan</em> module, Drupal needs to be able to access the MemberDB backend database.</p>
 <p>You can configure this database by editing your settings.php file.</p>

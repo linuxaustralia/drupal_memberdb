@@ -2,7 +2,7 @@
 /**
  * Provide webform module with a list of vote options.
  */
-function memberdbtoboggan_webform_webform_options_votes() {
+function memberdb_webform_webform_options_votes() {
   return array(
     'Y' => t('Yes'),
     'N' => t('No'),
@@ -11,9 +11,16 @@ function memberdbtoboggan_webform_webform_options_votes() {
 }
 
 /**
+ * Backward compatibility callback?
+ */
+function memberdbtoboggan_webform_webform_options_votes() {
+  return memberdb_webform_webform_options_votes();
+}
+
+/**
  * Implementation of hook_webform_validation_validators().
  */
-function memberdbtoboggan_webform_webform_validation_validators() {
+function memberdb_webform_webform_validation_validators() {
   return array(
     'memberdb_email' => array(
       'name' => "MemberDB email",
@@ -29,7 +36,7 @@ function memberdbtoboggan_webform_webform_validation_validators() {
 /**
  * Implementation of hook_webform_validation_validate().
  */
-function memberdbtoboggan_webform_webform_validation_validate($validator_name, $items, $components, $rule) {
+function memberdb_webform_webform_validation_validate($validator_name, $items, $components, $rule) {
   $version = $version = webform_validation_check_version();
   $check_false_callback = ($version == 3) ? '_webform_validation_check_false' : NULL;
 
