@@ -46,23 +46,30 @@ function memberdb_user($op, &$edit, &$account, $category = NULL) {
 
     // Admin or looking at self
     if (user_access('view memberdb information') || $user->uid == $account->uid) {
-      $account->content['memberdb'] = array(
-        '#type' => 'user_profile_category',
-        '#attributes' => array('class' => 'user-memberdb'),
-        '#weight' => 5,
-        '#title' => t('MemberDB'),
-        'membership' => array(
-          '#title' => t('Membership Status'),
-          '#type' => 'user_profile_item',
-          '#value' => memberdb_get_user_membership($account),
-        ),
-        'council' => array(
-          '#title' => t('Council Status'),
-          '#type' => 'user_profile_item',
-          '#value' => memberdb_get_user_council($account),
-          '#weight' => 1,
-        ),
-      );
+      if (variable_get('memberdb_organisation', 0)) {
+        $account->content['memberdb'] = array(
+          '#type' => 'user_profile_category',
+          '#attributes' => array('class' => 'user-memberdb'),
+          '#weight' => 5,
+          '#title' => t('MemberDB'),
+          'membership' => array(
+            '#title' => t('Membership Status'),
+            '#type' => 'user_profile_item',
+            '#value' => memberdb_get_user_membership($account),
+          ),
+          'council' => array(
+            '#title' => t('Council Status'),
+            '#type' => 'user_profile_item',
+            '#value' => memberdb_get_user_council($account),
+            '#weight' => 1,
+          ),
+        );
+      }
+      else {
+        if (user_access('administer memberdb')) {
+          drupal_set_message(t('MemberDB is not configured. Please select an organisation on the !link.', array('!link' => l('MemberDB settings page', 'admin/settings/memberdb'))), 'warning');
+        }
+      }
     }
   }
 }
