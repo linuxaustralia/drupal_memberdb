@@ -26,6 +26,7 @@ function memberdb_menu() {
  */
 function memberdb_perm() {
   return array(
+    'view memberdb information',
     'administer memberdb',
   );
 }
@@ -44,7 +45,7 @@ function memberdb_user($op, &$edit, &$account, $category = NULL) {
     }
 
     // Admin or looking at self
-    if (user_access('administer memberdb') || $user->uid == $account->uid) {
+    if (user_access('view memberdb information') || $user->uid == $account->uid) {
       $account->content['memberdb'] = array(
         '#type' => 'user_profile_category',
         '#attributes' => array('class' => 'user-memberdb'),
@@ -71,13 +72,14 @@ function memberdb_user($op, &$edit, &$account, $category = NULL) {
  */
 function memberdb_get_user_membership($account) {
   $data = array();
+  $organisation = variable_get('memberdb_organisation', 0);
 
   db_set_active('memberdb');
   if (!empty($account->profile_memberdb_id)) {
-    $result = db_query("SELECT m.id, o.name AS org, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN orgs o ON (o.id = om.org_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE m.id = %d ORDER BY om.start_date ASC, om.expiry ASC", $account->profile_memberdb_id);
+    $result = db_query("SELECT m.id, o.name AS org, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN orgs o ON (o.id = om.org_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE o.id = %d AND m.id = %d ORDER BY om.start_date ASC, om.expiry ASC", $organisation, $account->profile_memberdb_id);
   }
   else {
-    $result = db_query("SELECT m.id, o.name AS org, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN orgs o ON (o.id = om.org_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE m.email = '%s' ORDER BY om.start_date ASC, om.expiry ASC", $account->mail);
+    $result = db_query("SELECT m.id, o.name AS org, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN orgs o ON (o.id = om.org_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE o.id = %d AND m.email = '%s' ORDER BY om.start_date ASC, om.expiry ASC", $organisation, $account->mail);
   }
   while ($row = db_fetch_array($result)) {
     $row['start'] = format_date($row['start'], 'small');
@@ -87,7 +89,7 @@ function memberdb_get_user_membership($account) {
   db_set_active();
 
   if (empty($data)) {
-    return t('Has never applied for !site membership.', array('!site' => variable_get('site_name', '')));
+    return t('Has never applied for @organisation membership.', array('@organisation' => memberdb_get_organisation_by_id($organisation)));
   }
 
   $headers = array(
@@ -101,13 +103,14 @@ function memberdb_get_user_membership($account) {
  */
 function memberdb_get_user_council($account) {
   $data = array();
+  $organisation = variable_get('memberdb_organisation', 0);
 
   db_set_active('memberdb');
   if (!empty($account->profile_memberdb_id)) {
-    $result = db_query("SELECT m.id, o.name AS org, p.title AS position, p.description, UNIX_TIMESTAMP(ph.start_datetime) AS start, UNIX_TIMESTAMP(ph.end_datetime) AS expiry FROM positions_held ph INNER JOIN members m ON (m.id = ph.member_id) LEFT JOIN orgs o ON (o.id = ph.org_id) LEFT JOIN positions p ON (p.id = ph.position_id) WHERE m.id = %d ORDER BY ph.start_datetime ASC, ph.end_datetime ASC", $account->profile_memberdb_id);
+    $result = db_query("SELECT m.id, o.name AS org, p.title AS position, p.description, UNIX_TIMESTAMP(ph.start_datetime) AS start, UNIX_TIMESTAMP(ph.end_datetime) AS expiry FROM positions_held ph INNER JOIN members m ON (m.id = ph.member_id) LEFT JOIN orgs o ON (o.id = ph.org_id) LEFT JOIN positions p ON (p.id = ph.position_id) WHERE o.id = %d AND m.id = %d ORDER BY ph.start_datetime ASC, ph.end_datetime ASC", $organisation, $account->profile_memberdb_id);
   }
   else {
-    $result = db_query("SELECT m.id, o.name AS org, p.title AS position, p.description, UNIX_TIMESTAMP(ph.start_datetime) AS start, UNIX_TIMESTAMP(ph.end_datetime) AS expiry FROM positions_held ph INNER JOIN members m ON (m.id = ph.member_id) LEFT JOIN orgs o ON (o.id = ph.org_id) LEFT JOIN positions p ON (p.id = ph.position_id) WHERE m.email = '%s' ORDER BY ph.start_datetime ASC ASC, ph.end_datetime ASC", $account->mail);
+    $result = db_query("SELECT m.id, o.name AS org, p.title AS position, p.description, UNIX_TIMESTAMP(ph.start_datetime) AS start, UNIX_TIMESTAMP(ph.end_datetime) AS expiry FROM positions_held ph INNER JOIN members m ON (m.id = ph.member_id) LEFT JOIN orgs o ON (o.id = ph.org_id) LEFT JOIN positions p ON (p.id = ph.position_id) WHERE o.id = %d AND m.email = '%s' ORDER BY ph.start_datetime ASC ASC, ph.end_datetime ASC", $organisation, $account->mail);
   }
   while ($row = db_fetch_array($result)) {
     $row['start'] = format_date($row['start'], 'small');
@@ -117,7 +120,7 @@ function memberdb_get_user_council($account) {
   db_set_active();
 
   if (empty($data)) {
-    return t('Has never been on the council.');
+    return t('Has never been on the @organisation council.', array('@organisation' => memberdb_get_organisation_by_id($organisation)));
   }
 
   $headers = array(
@@ -126,3 +129,41 @@ function memberdb_get_user_council($account) {
   return theme('table', $headers, array_reverse($data, TRUE));
 }
 
+/**
+ * Helper - Return an option list of defined orgs.
+ *
+ * @param $option
+ *   Boolean: return an option list for use in forms.
+ */
+function memberdb_get_organisations($option = FALSE) {
+  $options = array(0 => t('<none>'));
+  db_set_active('memberdb');
+  $result = db_query("SELECT id, name, UNIX_TIMESTAMP(founded) AS founded FROM orgs ORDER BY name ASC");
+  while($row = db_fetch_object($result)) {
+    if ($option) {
+      $options[$row->id] = t('@name (Founded in @founded)', array('@name' => $row->name, '@founded' => format_date($row->founded, 'custom', 'M Y')));
+    }
+    else {
+      $options[$row->id] = check_plain($row->name);
+    }
+  }
+  db_set_active();
+
+  return $options;
+}
+
+/**
+ * Fetch an organisation name from a cached list.
+ */
+function memberdb_get_organisation_by_id($id = 0) {
+  static $orgs;
+
+  if (empty($orgs)) {
+    $orgs = memberdb_get_organisations();
+  }
+
+  if (isset($orgs[$id])) {
+    return $orgs[$id];
+  }
+  return NULL;
+}

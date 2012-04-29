@@ -9,9 +9,11 @@ function memberdb_admin_settings() {
   global $db_url;
   if (!is_array($db_url) || empty($db_url['memberdb'])) {
     drupal_set_message(t('This module requires additional configuration. No $db_url named memberdb was found in your settings.php file. Please add one.'), 'error');
+    $config = FALSE;
   }
   else {
     drupal_set_message(t('Your settings.php file contains a $db_url named memberdb.'));
+    $config = TRUE;
   }
 
   // If the memberdb db_url wasn't found, expand this help section.
@@ -20,11 +22,31 @@ function memberdb_admin_settings() {
     '#type' => 'fieldset',
     '#title' => 'Help',
     '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
+    '#collapsed' => $config,
   );
   $form['help']['memberdb_help'] = array(
     '#type'  => 'markup',
     '#value' => memberdb_admin_settings_help(),
+  );
+
+  if ($config == FALSE) {
+    return system_settings_form($form);
+  }
+
+  $form['memberdb'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Drupal Integration',
+    '#description' => t('Please configure the MemberDB integration options below. These will ensure the correct member data is displayed on the user profile.'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+  );
+
+  $form['memberdb']['memberdb_organisation'] = array(
+    '#type' => 'select',
+    '#title' => 'Organisation',
+    '#description' => t('Select the MemberDB organisation for which you want to display data on this site.'),
+    '#options' => memberdb_get_organisations(TRUE),
+    '#default_value' => variable_get('memberdb_organisation', 0),
   );
 
   return system_settings_form($form);
