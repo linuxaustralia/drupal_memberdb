@@ -47,6 +47,14 @@ function memberdbtoboggan_settings() {
       '#options' => $fields,
       '#default_value' => variable_get('memberdbtoboggan_profile_surname', 0),
     );
+
+    $form['memberdbtoboggan_member_id'] = array(
+      '#type' => 'select',
+      '#title' => 'MemberDB ID',
+      '#description' => t('Transpose the MemberDB ID to this profile field.'),
+      '#options' => $fields,
+      '#default_value' => variable_get('memberdbtoboggan_member_id', 0),
+    );
   }
 
   return system_settings_form($form);

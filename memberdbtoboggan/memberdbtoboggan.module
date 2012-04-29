@@ -103,6 +103,9 @@ function memberdbtoboggan_user_login_validate($form, &$form_state) {
             if ($field = variable_get('memberdbtoboggan_profile_surname', 0)) {
               $user_attributes[$field] = $row->last_name;
             }
+            if ($field = variable_get('memberdbtoboggan_memberdb_id', 0)) {
+              $user_attributes[$field] = $row->member_id;
+            }
           }
 
           $new_user = user_save(
