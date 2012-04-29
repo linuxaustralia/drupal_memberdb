@@ -18,7 +18,7 @@ function memberdbtoboggan_settings() {
     '#default_value' => variable_get('memberdbtoboggan_prefix', 'la'),
   );
 
-  $roles = array(0 => '<none>');
+  $roles = array(0 => t('<none>'));
   $roles += user_roles(TRUE);
   $form['memberdbtoboggan_rid'] = array(
     '#type' => 'select',
