@@ -1,4 +1,0 @@
-name = MemberDB
-description = Integrate MemberDB data with Drupal.
-core = 6.x
-package = " Linux Australia"

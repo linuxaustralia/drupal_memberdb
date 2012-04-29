@@ -1,7 +1,0 @@
-name = MemberDB Webform
-description = Webform integration for MemberDB.
-core = 6.x
-package = " Linux Australia"
-;
-dependencies[] = memberdb
-dependencies[] = webform_validation

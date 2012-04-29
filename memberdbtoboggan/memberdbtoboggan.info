@@ -1,6 +1,0 @@
-name = MemberDB Toboggan
-description = Allow users to login using their MemberDB details.
-core = 6.x
-package = " Linux Australia"
-
-dependencies[] = memberdb
