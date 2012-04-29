@@ -50,10 +50,16 @@ function memberdb_user($op, &$edit, &$account, $category = NULL) {
         '#attributes' => array('class' => 'user-memberdb'),
         '#weight' => 5,
         '#title' => t('MemberDB'),
-        'memberdb' => array(
+        'membership' => array(
           '#title' => t('Membership Status'),
           '#type' => 'user_profile_item',
-          '#value' => memberdb_get_user_history($account),
+          '#value' => memberdb_get_user_membership($account),
+        ),
+        'council' => array(
+          '#title' => t('Council Status'),
+          '#type' => 'user_profile_item',
+          '#value' => memberdb_get_user_council($account),
+          '#weight' => 1,
         ),
       );
     }
@@ -61,17 +67,17 @@ function memberdb_user($op, &$edit, &$account, $category = NULL) {
 }
 
 /**
- * Helper - fetch memberdb history.
+ * Helper - fetch memberdb membership history.
  */
-function memberdb_get_user_history($account) {
+function memberdb_get_user_membership($account) {
   $data = array();
 
   db_set_active('memberdb');
   if (!empty($account->profile_memberdb_id)) {
-    $result = db_query("SELECT m.id, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE m.id = %d ORDER BY om.expiry, om.start_date DESC", $account->profile_memberdb_id);
+    $result = db_query("SELECT m.id, o.name AS org, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN orgs o ON (o.id = om.org_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE m.id = %d ORDER BY om.expiry, om.start_date DESC", $account->profile_memberdb_id);
   }
   else {
-    $result = db_query("SELECT m.id, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE m.email = '%s' ORDER BY om.expiry, om.start_date DESC", $account->mail);
+    $result = db_query("SELECT m.id, o.name AS org, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN orgs o ON (o.id = om.org_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE m.email = '%s' ORDER BY om.expiry, om.start_date DESC", $account->mail);
   }
   while ($row = db_fetch_array($result)) {
     $row['start'] = format_date($row['start'], 'small');
@@ -80,8 +86,43 @@ function memberdb_get_user_history($account) {
   }
   db_set_active();
 
+  if (empty($data)) {
+    return t('Has never applied for !site membership.', array('!site' => variable_get('site_name', '')));
+  }
+
   $headers = array(
-    t('Member ID'), t('Status'), t('Description'), t('Started'), t('Expired'),
+    t('Member ID'), t('Organisation'), t('Status'), t('Description'), t('Started'), t('Expired'),
   );
   return theme('table', $headers, $data);
 }
+
+/**
+ * Helper - fetch memberdb council history.
+ */
+function memberdb_get_user_council($account) {
+  $data = array();
+
+  db_set_active('memberdb');
+  if (!empty($account->profile_memberdb_id)) {
+    $result = db_query("SELECT m.id, o.name AS org, p.title AS position, p.description, UNIX_TIMESTAMP(ph.start_datetime) AS start, UNIX_TIMESTAMP(ph.end_datetime) AS expiry FROM positions_held ph INNER JOIN members m ON (m.id = ph.member_id) LEFT JOIN orgs o ON (o.id = ph.org_id) LEFT JOIN positions p ON (p.id = ph.position_id) WHERE m.id = %d ORDER BY ph.end_datetime, ph.start_datetime DESC", $account->profile_memberdb_id);
+  }
+  else {
+    $result = db_query("SELECT m.id, o.name AS org, p.title AS position, p.description, UNIX_TIMESTAMP(ph.start_datetime) AS start, UNIX_TIMESTAMP(ph.end_datetime) AS expiry FROM positions_held ph INNER JOIN members m ON (m.id = ph.member_id) LEFT JOIN orgs o ON (o.id = ph.org_id) LEFT JOIN positions p ON (p.id = ph.position_id) WHERE m.email = '%s' ORDER BY ph.end_datetime, ph.start_datetime DESC", $account->mail);
+  }
+  while ($row = db_fetch_array($result)) {
+    $row['start'] = format_date($row['start'], 'small');
+    $row['expiry'] = ($row['expiry'] == 0) ? t('Current') : format_date($row['expiry'], 'small');
+    $data[] = $row;
+  }
+  db_set_active();
+
+  if (empty($data)) {
+    return t('Has never been on the council.');
+  }
+
+  $headers = array(
+    t('Member ID'), t('Organisation'), t('Position'), t('Description'), t('Started'), t('Expired'),
+  );
+  return theme('table', $headers, $data);
+}
+
