@@ -35,5 +35,53 @@ function memberdb_perm() {
  * Implements hook_user().
  */
 function memberdb_user($op, &$edit, &$account, $category = NULL) {
+  global $user;
 
+  if ($op == 'view') {
+    if (is_array($account->content['summary'])) {
+      $account->content['summary']['#title'] = t('Site');
+      $account->content['summary']['member_for']['#title'] = t('Active for');
+    }
+
+    // Admin or looking at self
+    if (user_access('administer memberdb') || $user->uid == $account->uid) {
+      $account->content['memberdb'] = array(
+        '#type' => 'user_profile_category',
+        '#attributes' => array('class' => 'user-memberdb'),
+        '#weight' => 5,
+        '#title' => t('MemberDB'),
+        'memberdb' => array(
+          '#title' => t('Membership Status'),
+          '#type' => 'user_profile_item',
+          '#value' => memberdb_get_user_history($account),
+        ),
+      );
+    }
+  }
+}
+
+/**
+ * Helper - fetch memberdb history.
+ */
+function memberdb_get_user_history($account) {
+  $data = array();
+
+  db_set_active('memberdb');
+  if (!empty($account->profile_memberdb_id)) {
+    $result = db_query("SELECT m.id, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE m.id = %d ORDER BY om.expiry, om.start_date DESC", $account->profile_memberdb_id);
+  }
+  else {
+    $result = db_query("SELECT m.id, t.type, t.description, UNIX_TIMESTAMP(om.start_date) AS start, UNIX_TIMESTAMP(om.expiry) AS expiry FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE m.email = '%s' ORDER BY om.expiry, om.start_date DESC", $account->mail);
+  }
+  while ($row = db_fetch_array($result)) {
+    $row['start'] = format_date($row['start'], 'small');
+    $row['expiry'] = ($row['expiry'] == 0) ? t('Will not expire') : format_date($row['expiry'], 'small');
+    $data[] = $row;
+  }
+  db_set_active();
+
+  $headers = array(
+    t('Member ID'), t('Status'), t('Description'), t('Started'), t('Expired'),
+  );
+  return theme('table', $headers, $data);
 }
