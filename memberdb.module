@@ -31,7 +31,6 @@ function memberdb_perm() {
   );
 }
 
-
 /**
  * Implements hook_user().
  */
@@ -72,6 +71,20 @@ function memberdb_user($op, &$edit, &$account, $category = NULL) {
       }
     }
   }
+}
+
+/**
+ * Helper - check if user is current member.
+ */
+function memberdb_user_is_member($account) {
+  $organisation = variable_get('memberdb_organisation', 0);
+  $type = variable_get('memberdb_type', 0);
+
+  db_set_active('memberdb');
+  $result = db_result(db_query("SELECT m.id FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN orgs o ON (o.id = om.org_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE o.id = %d t.id = %d AND m.email = '%s' AND (om.expiry != '0000-00-00 00:00:00' OR om.expiry <= '%s')", $organisation, $account->mail, $type, date('Y-m-d H:i:s')));
+  db_set_active();
+
+  return $result;
 }
 
 /**
@@ -171,6 +184,45 @@ function memberdb_get_organisation_by_id($id = 0) {
 
   if (isset($orgs[$id])) {
     return $orgs[$id];
+  }
+  return NULL;
+}
+
+/**
+ * Helper - Return an option list of defined member types.
+ *
+ * @param $option
+ *   Boolean: return an option list for use in forms.
+ */
+function memberdb_get_types($option = FALSE) {
+  $options = array(0 => t('<none>'));
+  db_set_active('memberdb');
+  $result = db_query("SELECT id, type, description FROM member_types ORDER BY type ASC");
+  while($row = db_fetch_object($result)) {
+    if ($option) {
+      $options[$row->id] = t('@name (@description)', array('@name' => $row->type, '@description' => $row->description));
+    }
+    else {
+      $options[$row->id] = check_plain($row->type);
+    }
+  }
+  db_set_active();
+
+  return $options;
+}
+
+/**
+ * Fetch a member type name from a cached list.
+ */
+function memberdb_get_type_by_id($id = 0) {
+  static $types;
+
+  if (empty($types)) {
+    $types = memberdb_get_types();
+  }
+
+  if (isset($types[$id])) {
+    return $types[$id];
   }
   return NULL;
 }

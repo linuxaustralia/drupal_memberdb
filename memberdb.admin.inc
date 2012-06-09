@@ -49,6 +49,22 @@ function memberdb_admin_settings() {
     '#default_value' => variable_get('memberdb_organisation', 0),
   );
 
+  $form['memberdb']['memberdb_type'] = array(
+    '#type' => 'select',
+    '#title' => 'Member',
+    '#description' => t('Select the MemberDB membership type that is assigned to all members.'),
+    '#options' => memberdb_get_types(TRUE),
+    '#default_value' => variable_get('memberdb_type', 0),
+  );
+
+  $form['memberdb']['memberdb_role'] = array(
+    '#type' => 'select',
+    '#title' => 'Member Role',
+    '#description' => t('Select the Drupal role that should be assigned to current MemberDB members when they login.'),
+    '#options' => user_roles(TRUE),
+    '#default_value' => variable_get('memberdb_role', array()),
+  );
+
   return system_settings_form($form);
 }
 
