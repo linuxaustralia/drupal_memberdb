@@ -81,7 +81,7 @@ function memberdb_user_is_member($account) {
   $type = variable_get('memberdb_type', 0);
 
   db_set_active('memberdb');
-  $result = db_result(db_query("SELECT m.id FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN orgs o ON (o.id = om.org_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE o.id = %d t.id = %d AND m.email = '%s' AND (om.expiry != '0000-00-00 00:00:00' OR om.expiry <= '%s')", $organisation, $account->mail, $type, date('Y-m-d H:i:s')));
+  $result = db_result(db_query("SELECT m.id FROM members m LEFT JOIN org_members om ON (m.id = om.member_id) LEFT JOIN orgs o ON (o.id = om.org_id) LEFT JOIN member_types t ON (t.id = om.member_type_id) WHERE o.id = %d AND t.id = %d AND m.email = '%s' AND (om.expiry IS NULL OR om.expiry = '0000-00-00 00:00:00' OR om.expiry >= '%s')", $organisation, $type, $account->mail, date('Y-m-d H:i:s')));
   db_set_active();
 
   return $result;
